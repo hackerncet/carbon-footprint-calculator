@@ -25,6 +25,7 @@ export const footprintEntries = sqliteTable('footprint_entries', {
 }, (table) => ({
   userIdIdx: index('footprint_user_id_idx').on(table.userId),
   entryDateIdx: index('footprint_entry_date_idx').on(table.entryDate),
+  userEntryDateIdx: index('footprint_user_entry_date_idx').on(table.userId, table.entryDate),
 }));
 
 export const userChallenges = sqliteTable('user_challenges', {
@@ -37,6 +38,7 @@ export const userChallenges = sqliteTable('user_challenges', {
   completedAt: integer('completed_at'), // timestamp
 }, (table) => ({
   userIdIdx: index('challenges_user_id_idx').on(table.userId),
+  userChallengeStatusIdx: index('challenges_user_status_idx').on(table.userId, table.status),
 }));
 
 export const userAchievements = sqliteTable('user_achievements', {
@@ -57,6 +59,7 @@ export const offsetPurchases = sqliteTable('offset_purchases', {
   purchasedAt: integer('purchased_at').notNull().default(sql`(strftime('%s', 'now'))`),
 }, (table) => ({
   userIdIdx: index('offsets_user_id_idx').on(table.userId),
+  userPurchasedAtIdx: index('offsets_user_purchased_idx').on(table.userId, table.purchasedAt),
 }));
 
 export const userGoals = sqliteTable('user_goals', {
@@ -68,6 +71,7 @@ export const userGoals = sqliteTable('user_goals', {
   createdAt: integer('created_at').notNull().default(sql`(strftime('%s', 'now'))`),
 }, (table) => ({
   userIdIdx: index('goals_user_id_idx').on(table.userId),
+  userTargetMonthIdx: index('goals_user_target_month_idx').on(table.userId, table.targetMonth),
 }));
 
 export type DBUser = typeof users.$inferSelect;

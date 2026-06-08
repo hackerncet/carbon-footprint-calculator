@@ -71,9 +71,11 @@ export default function Gamification({ onStatsUpdate }: GamificationProps) {
   const loadData = async () => {
     try {
       setLoading(true);
-      const userChallengesList = await fetchChallenges(getIdToken, user);
-      const userAchievementsList = await fetchAchievements(getIdToken, user);
-      const dashData = await fetchDashboard(getIdToken, user);
+      const [userChallengesList, userAchievementsList, dashData] = await Promise.all([
+        fetchChallenges(getIdToken, user),
+        fetchAchievements(getIdToken, user),
+        fetchDashboard(getIdToken, user)
+      ]);
 
       setChallenges(userChallengesList);
       setAchievements(userAchievementsList);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext.tsx';
 import { createFootprint, fetchDashboard } from '../services/api.ts';
 import { EMISSION_FACTORS } from '@carbon/shared';
@@ -53,7 +53,6 @@ export default function Calculator({ onStatsUpdate }: CalculatorProps) {
   const [inputValue, setInputValue] = useState<number | ''>('');
   const [notes, setNotes] = useState('');
   
-  const [livePreview, setLivePreview] = useState<number | null>(null);
   const [successData, setSuccessData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -64,15 +63,13 @@ export default function Calculator({ onStatsUpdate }: CalculatorProps) {
     setSubCategory(defaultSub);
     setInputValue('');
     setNotes('');
-    setLivePreview(null);
     setSuccessData(null);
   }, [activeTab]);
 
-  // Compute live calculations Reactively
-  useEffect(() => {
+  // Compute live calculations reactively as derived state to prevent extra render passes
+  const livePreview = useMemo(() => {
     if (inputValue === '' || isNaN(inputValue) || inputValue <= 0) {
-      setLivePreview(null);
-      return;
+      return null;
     }
 
     // Attempt local calculation for instant zero-latency feedback
@@ -87,9 +84,9 @@ export default function Calculator({ onStatsUpdate }: CalculatorProps) {
       } else if (activeTab === 'waste') {
         factor = EMISSION_FACTORS.waste[subCategory as keyof typeof EMISSION_FACTORS.waste] || 0;
       }
-      setLivePreview(parseFloat((inputValue * factor).toFixed(2)));
+      return parseFloat((inputValue * factor).toFixed(2));
     } catch (e) {
-      setLivePreview(null);
+      return null;
     }
   }, [inputValue, subCategory, activeTab]);
 

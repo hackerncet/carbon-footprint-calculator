@@ -1,4 +1,4 @@
-import React, { useState, lazy, Suspense } from 'react';
+import React, { useState, lazy, Suspense, useCallback } from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext.tsx';
@@ -25,10 +25,10 @@ function App() {
   const [points, setPoints] = useState(0);
   const [streak, setStreak] = useState(0);
 
-  const handleStatsUpdate = (pts: number, strk: number) => {
+  const handleStatsUpdate = useCallback((pts: number, strk: number) => {
     setPoints(pts);
     setStreak(strk);
-  };
+  }, []);
 
   if (!user) {
     return (

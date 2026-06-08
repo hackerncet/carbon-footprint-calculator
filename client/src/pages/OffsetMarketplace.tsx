@@ -47,8 +47,10 @@ export default function OffsetMarketplace({ onStatsUpdate }: OffsetMarketplacePr
   const loadData = async () => {
     try {
       setLoading(true);
-      const dashData = await fetchDashboard(getIdToken, user);
-      const purchaseHistory = await fetchOffsetsHistory(getIdToken, user);
+      const [dashData, purchaseHistory] = await Promise.all([
+        fetchDashboard(getIdToken, user),
+        fetchOffsetsHistory(getIdToken, user)
+      ]);
       
       setPoints(dashData.user.points);
       setHistory(purchaseHistory);

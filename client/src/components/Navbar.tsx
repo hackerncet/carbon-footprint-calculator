@@ -18,17 +18,17 @@ interface NavbarProps {
   userStreak?: number;
 }
 
+const NAV_ITEMS = [
+  { path: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { path: '/calculator', label: 'Calculator', icon: Calculator },
+  { path: '/gamification', label: 'Grid Challenges', icon: Trophy },
+  { path: '/offset', label: 'Offsets', icon: ShoppingBag },
+];
+
 export default function Navbar({ userPoints = 0, userStreak = 0 }: NavbarProps) {
   const location = useLocation();
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
-
-  const navItems = [
-    { path: '/', label: 'Dashboard', icon: LayoutDashboard },
-    { path: '/calculator', label: 'Calculator', icon: Calculator },
-    { path: '/gamification', label: 'Grid Challenges', icon: Trophy },
-    { path: '/offset', label: 'Offsets', icon: ShoppingBag },
-  ];
 
   return (
     <nav className="navbar">
@@ -53,7 +53,7 @@ export default function Navbar({ userPoints = 0, userStreak = 0 }: NavbarProps) 
 
         {/* Navigation list */}
         <ul className="nav-links">
-          {navItems.map(item => {
+          {NAV_ITEMS.map(item => {
             const isActive = location.pathname === item.path;
             const Icon = item.icon;
             return (
