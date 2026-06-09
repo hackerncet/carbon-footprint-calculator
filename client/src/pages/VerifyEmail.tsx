@@ -13,7 +13,7 @@ export default function VerifyEmail() {
   const [showTroubleshooting, setShowTroubleshooting] = useState(false);
 
   useEffect(() => {
-    let timer: NodeJS.Timeout;
+    let timer: ReturnType<typeof setInterval>;
     if (cooldown > 0) {
       timer = setInterval(() => {
         setCooldown(prev => prev - 1);
