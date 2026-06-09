@@ -1,6 +1,6 @@
 import { db } from '../config/db.js';
 import { users, userChallenges, userAchievements } from '../db/schema.js';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import { ECO_CHALLENGES } from '@carbon/shared';
 
 export async function checkAndUpdateStreak(userId: string, todayStr: string): Promise<{ streakUpdated: boolean; pointsAwarded: number }> {
@@ -48,7 +48,7 @@ export async function checkAndUpdateStreak(userId: string, todayStr: string): Pr
     .set({
       currentStreak: newStreak,
       lastActiveDate: todayStr,
-      points: user.points + pointsAwarded
+      points: sql`${users.points} + ${pointsAwarded}`
     })
     .where(eq(users.id, userId));
 
@@ -81,13 +81,10 @@ export async function awardBadge(userId: string, badgeId: string): Promise<boole
     awardedAt: Math.floor(Date.now() / 1000)
   });
 
-  // Award bonus points for achievement
-  const user = await db.query.users.findFirst({ where: eq(users.id, userId) });
-  if (user) {
-    await db.update(users)
-      .set({ points: user.points + 100 }) // 100 points per badge
-      .where(eq(users.id, userId));
-  }
+  // Award bonus points for achievement atomically
+  await db.update(users)
+    .set({ points: sql`${users.points} + 100` }) // 100 points per badge
+    .where(eq(users.id, userId));
 
   return true;
 }
@@ -168,13 +165,10 @@ export async function updateChallengeProgress(
 
       if (isCompleted) {
         completedChallengeTitles.push(config.title);
-        // Award points
-        const user = await db.query.users.findFirst({ where: eq(users.id, userId) });
-        if (user) {
-          await db.update(users)
-            .set({ points: user.points + config.pointsReward })
-            .where(eq(users.id, userId));
-        }
+        // Award points atomically
+        await db.update(users)
+          .set({ points: sql`${users.points} + ${config.pointsReward}` })
+          .where(eq(users.id, userId));
         // Check for Challenge Conqueror Badge
         await awardBadge(userId, 'challenge_conqueror');
       }

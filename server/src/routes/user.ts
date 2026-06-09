@@ -134,7 +134,7 @@ router.get('/dashboard', async (req, res) => {
     const allRecentEntries = await db.query.footprintEntries.findMany({
       where: and(
         eq(footprintEntries.userId, userId),
-        gte(sql`strftime('%Y-%m', ${footprintEntries.entryDate})`, earliestMonthKey)
+        gte(footprintEntries.entryDate, earliestMonthKey + '-01')
       ),
     });
 

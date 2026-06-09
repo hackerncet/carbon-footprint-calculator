@@ -3,7 +3,7 @@ import { requireAuth } from '../middleware/auth.js';
 import { offsetPurchaseSchema, SIMULATED_PROJECTS } from '@carbon/shared';
 import { db } from '../config/db.js';
 import { users, offsetPurchases } from '../db/schema.js';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, sql } from 'drizzle-orm';
 import { awardBadge } from '../utils/gamification.js';
 import { logger } from '../config/logger.js';
 import crypto from 'crypto';
@@ -59,36 +59,32 @@ router.post('/purchase', async (req, res) => {
     // Calculate required points cost
     const requiredPoints = Math.round(offsetAmountCo2eKg * project.factor);
 
-    // Fetch user profile to verify points balance
-    const user = await db.query.users.findFirst({
-      where: eq(users.id, userId),
-    });
-
-    if (!user) {
-      return res.status(404).json({ error: 'User profile not found' });
-    }
-
-    if (user.points < requiredPoints) {
-      return res.status(400).json({
-        error: `Insufficient Eco-Points. Required: ${requiredPoints}, Available: ${user.points}`,
-      });
-    }
-
     const purchaseId = crypto.randomUUID();
 
     // Perform purchase: update points and write purchase record atomically
-    await db.transaction(async (tx) => {
-      await tx.update(users)
-        .set({ points: user.points - requiredPoints })
-        .where(eq(users.id, userId));
+    db.transaction((tx) => {
+      const userTx = tx.select().from(users).where(eq(users.id, userId)).get();
 
-      await tx.insert(offsetPurchases).values({
+      if (!userTx) {
+        throw new Error('User profile not found');
+      }
+
+      if (userTx.points < requiredPoints) {
+        throw new Error(`Insufficient Eco-Points. Required: ${requiredPoints}, Available: ${userTx.points}`);
+      }
+
+      tx.update(users)
+        .set({ points: sql`${users.points} - ${requiredPoints}` })
+        .where(eq(users.id, userId))
+        .run();
+
+      tx.insert(offsetPurchases).values({
         id: purchaseId,
         userId,
         projectId,
         offsetAmountCo2eKg,
         costSimulatedCurrency: requiredPoints,
-      });
+      }).run();
     });
 
     // Proactively award the Carbon Offset Champion badge
@@ -112,6 +108,16 @@ router.post('/purchase', async (req, res) => {
     });
 
   } catch (error: unknown) {
+    const message = (error && typeof error === 'object' && 'message' in error)
+      ? String((error as any).message)
+      : String(error);
+
+    if (message.includes('Insufficient Eco-Points')) {
+      return res.status(400).json({ error: message });
+    }
+    if (message.includes('User profile not found')) {
+      return res.status(404).json({ error: message });
+    }
     logger.error('Error purchasing offsets', { error });
     res.status(500).json({ error: 'Failed to process offset purchase' });
   }

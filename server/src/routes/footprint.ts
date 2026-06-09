@@ -31,10 +31,18 @@ router.get('/', async (req, res) => {
       orderBy: [desc(footprintEntries.entryDate), desc(footprintEntries.createdAt)],
     });
 
-    res.json(entries.map(e => ({
-      ...e,
-      metadata: JSON.parse(e.metadata),
-    })));
+    res.json(entries.map(e => {
+      let parsed = {};
+      try {
+        parsed = e.metadata ? JSON.parse(e.metadata) : {};
+      } catch (err) {
+        logger.error('Failed to parse footprint entry metadata', { id: e.id, metadata: e.metadata, error: err });
+      }
+      return {
+        ...e,
+        metadata: parsed,
+      };
+    }));
   } catch (error: unknown) {
     logger.error('Error fetching footprint entries', { error });
     res.status(500).json({ error: 'Failed to fetch footprint entries' });
