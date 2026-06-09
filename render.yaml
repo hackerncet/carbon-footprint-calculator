@@ -3,7 +3,7 @@ services:
     name: zerogrid
     env: node
     plan: standard # Required for persistent disk, use 'free' if data persistence is not needed
-    buildCommand: npm install && npm run build
+    buildCommand: npm install && npm run build && npm run db:push
     startCommand: npm --workspace=server start
     healthCheckPath: /api/health
     envVars:
