@@ -5,6 +5,7 @@ import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 
 import { initFirebase } from './middleware/auth.js';
@@ -153,14 +154,32 @@ const allowedOrigins: string[] = [
   'http://localhost:3000',
 ].filter((origin): origin is string => typeof origin === 'string' && origin.length > 0);
 
-app.use(cors({
-  origin: (origin, callback) => {
-    // Allow server-to-server requests (no Origin header)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) return callback(null, true);
-    return callback(new Error('CORS Policy: Origin not allowed.'));
-  },
-  credentials: true,
+app.use(cors((req, callback) => {
+  const origin = req.header('Origin');
+  let allowed = false;
+
+  if (!origin) {
+    allowed = true;
+  } else if (allowedOrigins.includes(origin)) {
+    allowed = true;
+  } else {
+    try {
+      const originUrl = new URL(origin);
+      const reqHost = req.get('host'); // handles proxy headers correctly
+      if (reqHost && originUrl.host === reqHost) {
+        allowed = true;
+      }
+    } catch {
+      // Invalid URL
+    }
+  }
+
+  if (allowed) {
+    callback(null, { origin: true, credentials: true });
+  } else {
+    logger.warn(`CORS blocked request from origin: ${origin}`);
+    callback(new Error(`CORS Policy: Origin ${origin} not allowed.`));
+  }
 }));
 
 /**
@@ -215,9 +234,11 @@ app.post('/api/calculate', (req, res) => {
 // PRODUCTION STATIC FILE SERVING
 // ────────────────────────────────────────────────────────────
 
-if (process.env.NODE_ENV === 'production') {
-  const clientBuildPath = path.join(__dirname, '../../client/dist');
+const clientBuildPath = path.join(__dirname, '../../client/dist');
+const hasClientBuild = fs.existsSync(clientBuildPath);
 
+// Serve static assets in production, or if the client build exists and we are not explicitly in development/test modes
+if (process.env.NODE_ENV === 'production' || (hasClientBuild && process.env.NODE_ENV !== 'development' && process.env.NODE_ENV !== 'test')) {
   /** Serve pre-built Vite assets with immutable caching for fingerprinted files. */
   app.use(express.static(clientBuildPath, {
     maxAge: '1y',
