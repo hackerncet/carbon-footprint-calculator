@@ -1,8 +1,8 @@
-# EcoCoach
+# ZeroGrid
 
 ### Empowering individuals to calculate, reduce, and offset emissions with precision.
 
-**EcoCoach** is a carbon tracking, analytics, and gamification platform built as a React + Vite frontend, an Express + SQLite backend, and a shared TypeScript package for validation and domain types. Users can log footprint entries, review dashboard metrics, set monthly carbon budgets, earn gamification points and badges, and spend points in a simulated offset marketplace.
+**ZeroGrid** is a carbon tracking, analytics, and gamification platform built as a React + Vite frontend, an Express + SQLite backend, and a shared TypeScript package for validation and domain types. Users can log footprint entries, review dashboard metrics, set monthly carbon budgets, earn gamification points and badges, and spend points in a simulated offset marketplace.
 
 ---
 
@@ -17,7 +17,7 @@ Carbon dioxide and greenhouse gas emissions are driving climate change, yet the 
 ---
 
 ## 💡 Solution
-EcoCoach solves this by offering a responsive dashboard that tracks, validates, and aggregates carbon emissions. By converting logged footprint entries into points, streaks, and achievements, it incentivizes green habits. Users can set custom reduction goals and immediately purchase simulated offsets with their earned points, fostering an engaging ecosystem that turns climate awareness into daily action.
+ZeroGrid solves this by offering a responsive dashboard that tracks, validates, and aggregates carbon emissions. By converting logged footprint entries into points, streaks, and achievements, it incentivizes green habits. Users can set custom reduction goals and immediately purchase simulated offsets with their earned points, fostering an engaging ecosystem that turns climate awareness into daily action.
 
 ---
 
@@ -73,7 +73,7 @@ EcoCoach solves this by offering a responsive dashboard that tracks, validates, 
 
 ## 🔥 Firebase Setup Guide
 
-To configure authentication for EcoCoach using Firebase:
+To configure authentication for ZeroGrid using Firebase:
 
 ### 1. Create a Firebase Project
 1. Open the [Firebase Console](https://console.firebase.google.com/).
@@ -121,7 +121,7 @@ VITE_API_URL=/api
 
 ## 🚀 Render Deployment Guide
 
-EcoCoach is built as a workspace monorepo. In production, the Express backend builds and serves the frontend statically, so the app can run inside a single Render Web Service.
+ZeroGrid is built as a workspace monorepo. In production, the Express backend builds and serves the frontend statically, so the app can run inside a single Render Web Service.
 
 ### 1. Deploy on Render
 1. Push the code to GitHub.
