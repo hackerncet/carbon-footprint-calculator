@@ -66,9 +66,11 @@ function App() {
         <Suspense fallback={<PageFallback />}>
           <Routes>
             <Route path="/" element={<Dashboard onStatsUpdate={handleStatsUpdate} />} />
+            <Route path="/dashboard" element={<Dashboard onStatsUpdate={handleStatsUpdate} />} />
             <Route path="/calculator" element={<Calculator onStatsUpdate={handleStatsUpdate} />} />
             <Route path="/gamification" element={<Gamification onStatsUpdate={handleStatsUpdate} />} />
             <Route path="/offset" element={<OffsetMarketplace onStatsUpdate={handleStatsUpdate} />} />
+            <Route path="*" element={<Dashboard onStatsUpdate={handleStatsUpdate} />} />
           </Routes>
         </Suspense>
       </main>
