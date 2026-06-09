@@ -14,12 +14,18 @@ const OffsetMarketplace = lazy(() => import('./pages/OffsetMarketplace.tsx'));
 const Login = lazy(() => import('./pages/Login.tsx'));
 const VerifyEmail = lazy(() => import('./pages/VerifyEmail.tsx'));
 
+/** Shared loading fallback for lazily-loaded page chunks. */
 const PageFallback = () => (
   <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
-    <div style={{ fontSize: '1.2rem', fontWeight: 600, color: 'var(--text-muted)' }}>Loading section...</div>
+    <div style={{ fontSize: '1.2rem', fontWeight: 600, color: 'var(--text-muted)' }} role="status">Loading section...</div>
   </div>
 );
 
+/**
+ * Root application component.
+ * Manages authentication gating, gamification state propagation,
+ * and page-level routing with code-split lazy loading.
+ */
 function App() {
   const { user } = useAuth();
   const [points, setPoints] = useState(0);
@@ -48,31 +54,15 @@ function App() {
 
   return (
     <div className="app-container">
-      {/* Keyboard Accessibility Skip-Link to bypass sidebar navigation loop */}
-      <a 
-        href="#main-content" 
-        style={{
-          position: 'absolute',
-          top: '-100px',
-          left: '20px',
-          background: 'var(--primary)',
-          color: '#fff',
-          padding: '10px 20px',
-          borderRadius: '8px',
-          zIndex: 99999,
-          fontWeight: 700,
-          textDecoration: 'none',
-          transition: 'top 0.2s ease',
-          boxShadow: 'var(--shadow-md)'
-        }}
-        onFocus={(e) => e.currentTarget.style.top = '20px'}
-        onBlur={(e) => e.currentTarget.style.top = '-100px'}
-      >
+      {/* Keyboard Accessibility Skip-Link — uses CSS class instead of inline styles */}
+      <a href="#main-content" className="skip-link">
         Skip to main content
       </a>
 
       <Navbar userPoints={points} userStreak={streak} />
       <main id="main-content" className="app-main">
+        {/* Live region for route change announcements */}
+        <div aria-live="polite" aria-atomic="true" className="sr-only" id="route-announcer" />
         <Suspense fallback={<PageFallback />}>
           <Routes>
             <Route path="/" element={<Dashboard onStatsUpdate={handleStatsUpdate} />} />
@@ -86,7 +76,13 @@ function App() {
   );
 }
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
+// Safe root element access with null check
+const rootElement = document.getElementById('root');
+if (!rootElement) {
+  throw new Error('Root element #root not found in the DOM.');
+}
+
+ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
     <ThemeProvider>
       <AuthProvider>

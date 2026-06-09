@@ -32,7 +32,7 @@ export default function VerifyEmail() {
       if (user && !user.emailVerified) {
         setError('Email not verified yet. Please click the link in your verification email and try again.');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(formatAuthError(err));
     } finally {
       setChecking(false);
@@ -48,7 +48,7 @@ export default function VerifyEmail() {
       await sendVerification();
       setMessage('Verification email sent! Please check your inbox (and spam folder).');
       setCooldown(60);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(formatAuthError(err));
     } finally {
       setResending(false);

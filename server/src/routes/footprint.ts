@@ -2,63 +2,58 @@ import { Router } from 'express';
 import { requireAuth } from '../middleware/auth.js';
 import { footprintEntrySchema } from '@carbon/shared';
 import { db } from '../config/db.js';
-import { footprintEntries, users } from '../db/schema.js';
+import { footprintEntries } from '../db/schema.js';
 import { calculateCarbon } from '../utils/calculator.js';
 import { checkAndUpdateStreak, updateChallengeProgress, awardBadge } from '../utils/gamification.js';
+import { getOrCreateUser } from '../utils/userService.js';
+import { logger } from '../config/logger.js';
 import { eq, and, desc } from 'drizzle-orm';
 import crypto from 'crypto';
 
 const router = Router();
 
+/** UUID v4 format regex for input ID sanitization. */
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 // Require auth for all footprint endpoints
 router.use(requireAuth);
 
-// GET /api/footprint - Get all user footprint entries
+/**
+ * GET /api/footprint
+ * Retrieves all footprint entries for the authenticated user,
+ * ordered by date descending.
+ */
 router.get('/', async (req, res) => {
   try {
     const userId = req.user!.uid;
     const entries = await db.query.footprintEntries.findMany({
       where: eq(footprintEntries.userId, userId),
-      orderBy: [desc(footprintEntries.entryDate), desc(footprintEntries.createdAt)]
+      orderBy: [desc(footprintEntries.entryDate), desc(footprintEntries.createdAt)],
     });
 
     res.json(entries.map(e => ({
       ...e,
-      metadata: JSON.parse(e.metadata)
+      metadata: JSON.parse(e.metadata),
     })));
-  } catch (error) {
-    console.error('Error fetching footprint entries:', error);
+  } catch (error: unknown) {
+    logger.error('Error fetching footprint entries', { error });
     res.status(500).json({ error: 'Failed to fetch footprint entries' });
   }
 });
 
-// Helper for JIT (Just-In-Time) user creation
-async function getOrCreateUser(uid: string, email: string) {
-  let user = await db.query.users.findFirst({
-    where: eq(users.id, uid)
-  });
-
-  if (!user) {
-    const displayName = email.split('@')[0];
-    await db.insert(users).values({
-      id: uid,
-      email,
-      displayName,
-      points: 0,
-      currentStreak: 0,
-    }).onConflictDoNothing();
-  }
-}
-
-// POST /api/footprint - Add a new footprint log entry
+/**
+ * POST /api/footprint
+ * Creates a new footprint log entry, triggers gamification updates
+ * (streaks, challenge progress, badges), and returns the result.
+ */
 router.post('/', async (req, res) => {
   try {
     const userId = req.user!.uid;
     const email = req.user!.email;
-    
+
     // Ensure the user exists in SQLite before adding dependent records
     await getOrCreateUser(userId, email);
-    
+
     // Validate request body
     const validationResult = footprintEntrySchema.safeParse(req.body);
     if (!validationResult.success) {
@@ -74,7 +69,7 @@ router.post('/', async (req, res) => {
     const metadataStr = JSON.stringify({
       subCategory,
       notes: notes || '',
-      calculatedUnit: calcResult.unit
+      calculatedUnit: calcResult.unit,
     });
 
     // Write log entry to SQLite
@@ -86,7 +81,7 @@ router.post('/', async (req, res) => {
       inputValue,
       inputUnit,
       carbonCo2eKg: calcResult.carbonCo2eKg,
-      metadata: metadataStr
+      metadata: metadataStr,
     });
 
     // Proactively check and register the First Log badge
@@ -106,32 +101,41 @@ router.post('/', async (req, res) => {
         inputValue,
         inputUnit,
         carbonCo2eKg: calcResult.carbonCo2eKg,
-        metadata: { subCategory, notes }
+        metadata: { subCategory, notes },
       },
       gamification: {
         streakUpdated: streakResult.streakUpdated,
         pointsAwarded: streakResult.pointsAwarded,
-        completedChallenges
-      }
+        completedChallenges,
+      },
     });
-  } catch (error: any) {
-    console.error('Error logging footprint entry:', error);
-    res.status(500).json({ error: error.message || 'Failed to log footprint entry' });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Failed to log footprint entry';
+    logger.error('Error logging footprint entry', { error });
+    res.status(500).json({ error: message });
   }
 });
 
-// DELETE /api/footprint/:id - Remove a footprint entry
+/**
+ * DELETE /api/footprint/:id
+ * Removes a footprint entry by UUID, verifying ownership first.
+ */
 router.delete('/:id', async (req, res) => {
   try {
     const userId = req.user!.uid;
     const entryId = req.params.id;
+
+    // Validate UUID format to prevent injection
+    if (!UUID_REGEX.test(entryId)) {
+      return res.status(400).json({ error: 'Invalid entry ID format' });
+    }
 
     // Check if the log belongs to this user
     const existing = await db.query.footprintEntries.findFirst({
       where: and(
         eq(footprintEntries.id, entryId),
         eq(footprintEntries.userId, userId)
-      )
+      ),
     });
 
     if (!existing) {
@@ -142,8 +146,8 @@ router.delete('/:id', async (req, res) => {
       .where(eq(footprintEntries.id, entryId));
 
     res.json({ message: 'Footprint entry deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting footprint entry:', error);
+  } catch (error: unknown) {
+    logger.error('Error deleting footprint entry', { error });
     res.status(500).json({ error: 'Failed to delete footprint entry' });
   }
 });

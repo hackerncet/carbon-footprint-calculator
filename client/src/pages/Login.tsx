@@ -32,8 +32,7 @@ export default function Login() {
       } else {
         await login(email, password);
       }
-    } catch (err: any) {
-      console.error(err);
+    } catch (err: unknown) {
       setError(formatAuthError(err));
     } finally {
       setLoading(false);
@@ -45,8 +44,7 @@ export default function Login() {
       setError('');
       setLoading(true);
       await loginWithGoogle();
-    } catch (err: any) {
-      console.error(err);
+    } catch (err: unknown) {
       setError(formatAuthError(err));
     } finally {
       setLoading(false);
@@ -58,7 +56,7 @@ export default function Login() {
       setError('');
       setLoading(true);
       await login('dev-mock@example.com', 'password123');
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError('Failed to trigger developer bypass.');
     } finally {
       setLoading(false);
@@ -186,7 +184,7 @@ export default function Login() {
           </div>
 
           {error && (
-            <div style={{
+            <div role="alert" aria-live="assertive" style={{
               display: 'flex',
               alignItems: 'center',
               gap: '8px',

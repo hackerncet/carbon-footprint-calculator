@@ -29,8 +29,8 @@ const SUB_CATEGORIES = {
     { value: 'electric_car', label: 'Electric Car', unit: 'km' },
     { value: 'bus', label: 'Bus Transit', unit: 'km' },
     { value: 'train', label: 'Train/Subway', unit: 'km' },
-    { value: 'flight_short', label: 'Flight (Short haul &lt; 3h)', unit: 'km' },
-    { value: 'flight_long', label: 'Flight (Long haul &gt; 3h)', unit: 'km' },
+    { value: 'flight_short', label: 'Flight (Short haul < 3h)', unit: 'km' },
+    { value: 'flight_long', label: 'Flight (Long haul > 3h)', unit: 'km' },
   ],
   food: [
     { value: 'beef', label: 'Beef consumption', unit: 'kg' },
@@ -53,7 +53,10 @@ export default function Calculator({ onStatsUpdate }: CalculatorProps) {
   const [inputValue, setInputValue] = useState<number | ''>('');
   const [notes, setNotes] = useState('');
   
-  const [successData, setSuccessData] = useState<any>(null);
+  const [successData, setSuccessData] = useState<{
+    entry: { carbonCo2eKg: number };
+    gamification: { pointsAwarded: number; streakUpdated: boolean; completedChallenges: string[] };
+  } | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -130,9 +133,9 @@ export default function Calculator({ onStatsUpdate }: CalculatorProps) {
           console.error('Failed to update stats after footprint entry:', dashboardErr);
         }
       }
-    } catch (err: any) {
-      console.error(err);
-      setError(err.message || 'Failed to log footprint entry.');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to log footprint entry.';
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -207,7 +210,7 @@ export default function Calculator({ onStatsUpdate }: CalculatorProps) {
               onChange={(e) => setSubCategory(e.target.value)}
             >
               {SUB_CATEGORIES[activeTab].map(item => (
-                <option key={item.value} value={item.value} dangerouslySetInnerHTML={{ __html: item.label }} />
+                <option key={item.value} value={item.value}>{item.label}</option>
               ))}
             </select>
           </div>
@@ -236,7 +239,8 @@ export default function Calculator({ onStatsUpdate }: CalculatorProps) {
                 transform: 'translateY(-50%)',
                 color: 'var(--text-muted)',
                 fontWeight: 600
-              }} dangerouslySetInnerHTML={{ __html: currentUnit }}>
+              }}>
+                {currentUnit}
               </span>
             </div>
           </div>
@@ -256,7 +260,7 @@ export default function Calculator({ onStatsUpdate }: CalculatorProps) {
           </div>
 
           {error && (
-            <div style={{
+            <div role="alert" aria-live="assertive" style={{
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
@@ -300,10 +304,10 @@ export default function Calculator({ onStatsUpdate }: CalculatorProps) {
             </span>
             <span style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--text-main)', lineHeight: 1 }}>
               {livePreview !== null ? livePreview : '0.00'}
-              <span style={{ fontSize: '1.2rem', fontWeight: 600, color: 'var(--text-muted)', marginLeft: '6px' }}>kg CO2e</span>
+              <span style={{ fontSize: '1.2rem', fontWeight: 600, color: 'var(--text-muted)', marginLeft: '6px' }}>kg CO₂e</span>
             </span>
             <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-              Based on standard conversion factors. 1 kg CO2e is equivalent to driving approx 6 km in a petrol car.
+              Based on standard conversion factors. 1 kg CO₂e is equivalent to driving approx 6 km in a petrol car.
             </p>
           </div>
 
@@ -325,7 +329,7 @@ export default function Calculator({ onStatsUpdate }: CalculatorProps) {
 
       {/* Gamification Success Toast Modal */}
       {successData && (
-        <div className="animate-fade-in" style={{
+        <div className="animate-fade-in" role="status" aria-live="polite" style={{
           position: 'fixed',
           bottom: '24px',
           right: '24px',

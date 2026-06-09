@@ -54,8 +54,9 @@ export default function GoalsWidget({ goals, currentBreakdown, totalThisMonth, o
 
       // Clear success alert after 3 seconds
       setTimeout(() => setSuccess(''), 3000);
-    } catch (err: any) {
-      setError(err.message || 'Failed to save eco budget.');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to save eco budget.';
+      setError(message);
     } finally {
       setSubmitting(false);
     }
@@ -120,7 +121,7 @@ export default function GoalsWidget({ goals, currentBreakdown, totalThisMonth, o
             />
           </div>
 
-          {error && <div style={{ fontSize: '0.75rem', color: '#ef4444' }}>{error}</div>}
+          {error && <div role="alert" aria-live="assertive" style={{ fontSize: '0.75rem', color: '#ef4444' }}>{error}</div>}
 
           <button
             type="submit"
@@ -134,7 +135,7 @@ export default function GoalsWidget({ goals, currentBreakdown, totalThisMonth, o
       )}
 
       {success && (
-        <div style={{
+        <div role="status" aria-live="polite" style={{
           display: 'flex',
           alignItems: 'center',
           gap: '6px',
@@ -177,14 +178,21 @@ export default function GoalsWidget({ goals, currentBreakdown, totalThisMonth, o
                 </div>
                 
                 {/* Progress bar tracks */}
-                <div style={{
-                  width: '100%',
-                  height: '8px',
-                  backgroundColor: 'var(--border-color)',
-                  borderRadius: '4px',
-                  overflow: 'hidden',
-                  position: 'relative'
-                }}>
+                <div
+                  role="progressbar"
+                  aria-valuenow={Math.min(percentage, 100)}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-label={`${goal.category === 'total' ? 'Total Footprint' : goal.category} budget: ${percentage}%`}
+                  style={{
+                    width: '100%',
+                    height: '8px',
+                    backgroundColor: 'var(--border-color)',
+                    borderRadius: '4px',
+                    overflow: 'hidden',
+                    position: 'relative'
+                  }}
+                >
                   <div style={{
                     width: `${Math.min(percentage, 100)}%`,
                     height: '100%',

@@ -1,23 +1,43 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, sendEmailVerification, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, sendEmailVerification, GoogleAuthProvider, signInWithPopup, Auth } from 'firebase/auth';
 
+/** Representation of the authenticated user in the client. */
+interface AppUser {
+  uid: string;
+  email: string;
+  displayName: string | null;
+  avatarUrl?: string | null;
+  emailVerified: boolean;
+}
+
+/** Shape of the AuthContext value. */
 interface AuthContextType {
-  user: { uid: string; email: string; displayName: string | null; avatarUrl?: string | null; emailVerified: boolean } | null;
+  /** Current user or null if not authenticated. */
+  user: AppUser | null;
+  /** True while the initial auth state is being determined. */
   loading: boolean;
+  /** True when Firebase is not configured (local dev mode). */
   isDevMode: boolean;
+  /** Retrieves a Firebase ID token for API requests. */
   getIdToken: (forceRefresh?: boolean) => Promise<string | null>;
+  /** Signs in with email and password. */
   login: (email: string, password: string) => Promise<void>;
+  /** Creates a new account and sends email verification. */
   signup: (email: string, password: string) => Promise<void>;
+  /** Signs out the current user. */
   logout: () => Promise<void>;
+  /** Sends a verification email to the current user. */
   sendVerification: () => Promise<void>;
+  /** Reloads the current Firebase user to refresh email verification status. */
   reloadUser: () => Promise<void>;
+  /** Signs in with Google via popup. */
   loginWithGoogle: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-let auth: any = null;
+let auth: Auth | null = null;
 let isFirebaseConfigured = false;
 
 // Initialize Firebase if credentials exist in Vite env variables
@@ -41,8 +61,12 @@ if (
   }
 }
 
+/**
+ * Provides authentication state and actions to the component tree.
+ * Supports both Firebase Auth (production) and mock auth (local dev).
+ */
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -51,7 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (fbUser) {
           setUser({
             uid: fbUser.uid,
-            email: fbUser.email,
+            email: fbUser.email || '',
             displayName: fbUser.displayName,
             avatarUrl: fbUser.photoURL,
             emailVerified: fbUser.emailVerified,
@@ -65,9 +89,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Local Developer mock authentication fallback
       const savedMockUser = localStorage.getItem('mock_user');
       if (savedMockUser) {
-        setUser(JSON.parse(savedMockUser));
+        try {
+          setUser(JSON.parse(savedMockUser) as AppUser);
+        } catch {
+          localStorage.removeItem('mock_user');
+        }
       } else {
-        const defaultMock = {
+        const defaultMock: AppUser = {
           uid: 'dev-mock-uid-123',
           email: 'dev-mock@example.com',
           displayName: 'Eco Developer',
@@ -84,7 +112,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (isFirebaseConfigured && auth) {
       await signInWithEmailAndPassword(auth, email, password);
     } else {
-      const mockUser = {
+      const mockUser: AppUser = {
         uid: `dev-${email.replace(/[^a-zA-Z0-9]/g, '')}`,
         email,
         displayName: email.split('@')[0],
@@ -103,7 +131,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await sendEmailVerification(userCredential.user);
       }
     } else {
-      const mockUser = {
+      const mockUser: AppUser = {
         uid: `dev-${email.replace(/[^a-zA-Z0-9]/g, '')}`,
         email,
         displayName: email.split('@')[0],
@@ -129,7 +157,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
     } else {
-      const mockUser = {
+      const mockUser: AppUser = {
         uid: 'dev-google-mock-uid-999',
         email: 'google-dev@example.com',
         displayName: 'Google Mock Dev',
@@ -166,7 +194,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       setUser({
         uid: fbUser.uid,
-        email: fbUser.email,
+        email: fbUser.email || '',
         displayName: fbUser.displayName,
         avatarUrl: fbUser.photoURL,
         emailVerified: fbUser.emailVerified,
@@ -194,7 +222,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function useAuth() {
+/**
+ * Hook to consume the authentication context.
+ * @throws {Error} If used outside of an `AuthProvider`.
+ */
+export function useAuth(): AuthContextType {
   const context = useContext(AuthContext);
   if (!context) throw new Error('useAuth must be used within an AuthProvider');
   return context;

@@ -1,14 +1,30 @@
 /**
  * Maps Firebase Auth error codes to user-friendly, clean error messages.
- * Prevents technical strings (e.g., "Firebase: Error (auth/email-already-in-use)") 
+ * Prevents technical strings (e.g., "Firebase: Error (auth/email-already-in-use)")
  * from leaking into the user interface.
+ *
+ * @param err - The error object (typically from Firebase Auth). Accepts `unknown` type.
+ * @returns A human-readable error message suitable for display.
  */
-export function formatAuthError(err: any): string {
-  // Extract error code from either err.code or raw message
-  let code = err?.code || '';
-  
-  if (!code && err?.message) {
-    const match = err.message.match(/\((auth\/[a-z0-9-]+)\)/);
+export function formatAuthError(err: unknown): string {
+  // Safely extract code and message from unknown error
+  let code = '';
+  let rawMessage = '';
+
+  if (err !== null && typeof err === 'object') {
+    if ('code' in err && typeof (err as Record<string, unknown>).code === 'string') {
+      code = (err as Record<string, unknown>).code as string;
+    }
+    if ('message' in err && typeof (err as Record<string, unknown>).message === 'string') {
+      rawMessage = (err as Record<string, unknown>).message as string;
+    }
+  } else if (typeof err === 'string') {
+    rawMessage = err;
+  }
+
+  // Attempt to extract auth code from raw message if not available directly
+  if (!code && rawMessage) {
+    const match = rawMessage.match(/\((auth\/[a-z0-9-]+)\)/);
     if (match) {
       code = match[1];
     }
@@ -34,9 +50,9 @@ export function formatAuthError(err: any): string {
     case 'auth/operation-not-allowed':
       return 'Email/Password authentication is not enabled in the Firebase Console.';
     default:
-      if (err?.message) {
+      if (rawMessage) {
         // Strip Firebase prefix if present
-        return err.message
+        return rawMessage
           .replace(/^Firebase:\s*/i, '')
           .replace(/\s*\(auth\/.*\)\.?$/i, '')
           .trim();

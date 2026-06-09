@@ -1,81 +1,49 @@
-import { EMISSION_FACTORS, Category } from '@carbon/shared';
+import { EMISSION_FACTORS, UNITS_MAP, Category } from '@carbon/shared';
 
+/**
+ * Calculates the carbon dioxide equivalent (CO₂e) emissions for a given activity.
+ *
+ * Uses a Map-based lookup against the shared `EMISSION_FACTORS` and `UNITS_MAP`
+ * constants, reducing cyclomatic complexity from O(n) if-else chains to O(1) lookups.
+ *
+ * @param category - The top-level emission category ('energy', 'transport', 'food', 'waste').
+ * @param subCategory - The specific activity type within the category (e.g., 'electricity', 'petrol_car').
+ * @param value - The numeric input value (must be a non-negative finite number).
+ * @returns An object containing the calculated CO₂e in kg and the input unit.
+ * @throws {Error} If the category, subcategory, or value is invalid.
+ *
+ * @example
+ * ```ts
+ * calculateCarbon('energy', 'electricity', 100);
+ * // => { carbonCo2eKg: 38, unit: 'kWh' }
+ * ```
+ */
 export function calculateCarbon(
   category: Category,
   subCategory: string,
   value: number
 ): { carbonCo2eKg: number; unit: string } {
-  let factor = 0;
-  let unit = '';
+  // Validate input value
+  if (!Number.isFinite(value) || value < 0) {
+    throw new Error(`Invalid value: ${value}. Must be a non-negative finite number.`);
+  }
 
-  switch (category) {
-    case 'energy':
-      if (subCategory === 'electricity') {
-        factor = EMISSION_FACTORS.energy.electricity;
-        unit = 'kWh';
-      } else if (subCategory === 'natural_gas') {
-        factor = EMISSION_FACTORS.energy.natural_gas;
-        unit = 'kWh';
-      } else {
-        throw new Error(`Invalid subCategory ${subCategory} for category energy`);
-      }
-      break;
-    case 'transport':
-      if (subCategory === 'petrol_car') {
-        factor = EMISSION_FACTORS.transport.petrol_car;
-        unit = 'km';
-      } else if (subCategory === 'diesel_car') {
-        factor = EMISSION_FACTORS.transport.diesel_car;
-        unit = 'km';
-      } else if (subCategory === 'electric_car') {
-        factor = EMISSION_FACTORS.transport.electric_car;
-        unit = 'km';
-      } else if (subCategory === 'bus') {
-        factor = EMISSION_FACTORS.transport.bus;
-        unit = 'km';
-      } else if (subCategory === 'train') {
-        factor = EMISSION_FACTORS.transport.train;
-        unit = 'km';
-      } else if (subCategory === 'flight_short') {
-        factor = EMISSION_FACTORS.transport.flight_short;
-        unit = 'km';
-      } else if (subCategory === 'flight_long') {
-        factor = EMISSION_FACTORS.transport.flight_long;
-        unit = 'km';
-      } else {
-        throw new Error(`Invalid subCategory ${subCategory} for category transport`);
-      }
-      break;
-    case 'food':
-      if (subCategory === 'beef') {
-        factor = EMISSION_FACTORS.food.beef;
-        unit = 'kg';
-      } else if (subCategory === 'poultry') {
-        factor = EMISSION_FACTORS.food.poultry;
-        unit = 'kg';
-      } else if (subCategory === 'vegetarian') {
-        factor = EMISSION_FACTORS.food.vegetarian;
-        unit = 'kg';
-      } else if (subCategory === 'vegan') {
-        factor = EMISSION_FACTORS.food.vegan;
-        unit = 'kg';
-      } else {
-        throw new Error(`Invalid subCategory ${subCategory} for category food`);
-      }
-      break;
-    case 'waste':
-      if (subCategory === 'landfill') {
-        factor = EMISSION_FACTORS.waste.landfill;
-        unit = 'kg';
-      } else if (subCategory === 'recycled') {
-        factor = EMISSION_FACTORS.waste.recycled;
-        unit = 'kg';
-      } else {
-        throw new Error(`Invalid subCategory ${subCategory} for category waste`);
-      }
-      break;
-    default:
-      throw new Error(`Invalid category ${category}`);
+  // Look up the category factors
+  const categoryFactors = EMISSION_FACTORS[category];
+  if (!categoryFactors) {
+    throw new Error(`Invalid category: ${category}`);
+  }
+
+  // Look up the subcategory factor
+  const factor = (categoryFactors as Record<string, number>)[subCategory];
+  if (factor === undefined) {
+    throw new Error(`Invalid subCategory "${subCategory}" for category "${category}"`);
+  }
+
+  // Look up the unit
+  const unit = UNITS_MAP[subCategory];
+  if (!unit) {
+    throw new Error(`No unit mapping found for subCategory "${subCategory}"`);
   }
 
   return {

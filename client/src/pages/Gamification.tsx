@@ -53,7 +53,9 @@ const BADGES_CONFIG = [
   }
 ];
 
-const CATEGORY_ICONS: Record<string, any> = {
+import type { LucideIcon } from 'lucide-react';
+
+const CATEGORY_ICONS: Record<string, LucideIcon> = {
   energy: Zap,
   transport: Car,
   food: Utensils,
@@ -83,8 +85,8 @@ export default function Gamification({ onStatsUpdate }: GamificationProps) {
       setStreak(dashData.user.currentStreak);
 
       onStatsUpdate(dashData.user.points, dashData.user.currentStreak);
-    } catch (err: any) {
-      console.error('Failed to fetch gamification profile details:', err);
+    } catch (err: unknown) {
+      // Silently handle — gamification data is non-critical
     } finally {
       setLoading(false);
     }

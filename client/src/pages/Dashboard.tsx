@@ -31,7 +31,9 @@ const CATEGORY_COLORS: Record<string, string> = {
   waste: '#a855f7'       // Purple
 };
 
-const CATEGORY_ICONS: Record<string, any> = {
+import type { LucideIcon } from 'lucide-react';
+
+const CATEGORY_ICONS: Record<string, LucideIcon> = {
   energy: Zap,
   transport: Car,
   food: Utensils,
@@ -60,9 +62,9 @@ export default function Dashboard({ onStatsUpdate }: DashboardProps) {
       // Update global states in layout
       onStatsUpdate(dashData.kpis.pointsEarned, dashData.kpis.activeStreak);
       setError('');
-    } catch (err: any) {
-      console.error(err);
-      setError(err.message || 'Failed to fetch dashboard metrics.');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to fetch dashboard metrics.';
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -76,8 +78,9 @@ export default function Dashboard({ onStatsUpdate }: DashboardProps) {
         await reloadUser();
       }
       await loadData();
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch dashboard metrics.');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to fetch dashboard metrics.';
+      setError(message);
       setLoading(false);
     }
   };
@@ -91,22 +94,23 @@ export default function Dashboard({ onStatsUpdate }: DashboardProps) {
     try {
       await deleteFootprint(getIdToken, user, id);
       await loadData();
-    } catch (err: any) {
-      alert(err.message || 'Failed to delete log entry.');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to delete log entry.';
+      alert(message);
     }
   };
 
   if (loading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
-        <div style={{ fontSize: '1.2rem', fontWeight: 600, color: 'var(--text-muted)' }}>Analyzing your footprint logs...</div>
+        <div style={{ fontSize: '1.2rem', fontWeight: 600, color: 'var(--text-muted)' }} role="status">Analyzing your footprint logs...</div>
       </div>
     );
   }
 
   if (error || !data) {
     return (
-      <div style={{ padding: '24px', color: 'var(--danger)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      <div role="alert" style={{ padding: '24px', color: 'var(--danger)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
         <h2>Something went wrong</h2>
         <p>{error}</p>
         <button onClick={handleRetry} className="btn btn-primary" style={{ alignSelf: 'flex-start' }}>Retry</button>
@@ -442,7 +446,14 @@ export default function Dashboard({ onStatsUpdate }: DashboardProps) {
                 <tbody>
                   {recentEntries.map(entry => {
                     const Icon = CATEGORY_ICONS[entry.category] || Activity;
-                    const meta = entry.metadata as any;
+                    interface FootprintMetadata {
+                      subCategory?: string;
+                      notes?: string;
+                      calculatedUnit?: string;
+                    }
+                    const meta = (typeof entry.metadata === 'string'
+                      ? JSON.parse(entry.metadata)
+                      : entry.metadata) as FootprintMetadata | null | undefined;
                     return (
                       <tr key={entry.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
                         <td style={{ padding: '12px 8px', fontWeight: 500 }}>{entry.entryDate}</td>

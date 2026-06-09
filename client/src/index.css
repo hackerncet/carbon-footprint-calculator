@@ -36,7 +36,7 @@
   --bg-card-hover: rgba(24, 24, 30, 0.75);
   --border-color: rgba(255, 255, 255, 0.06);
   --text-main: #f8fafc;
-  --text-muted: #94a3b8;
+  --text-muted: #a8b5c7; /* Improved contrast for WCAG AAA (≥7:1 on #08080a) */
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
   --shadow-md: 0 20px 50px -12px rgba(0, 0, 0, 0.5), 0 1px 4px rgba(255, 255, 255, 0.01);
   --primary-light: 48%;
@@ -48,6 +48,16 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+}
+
+/* Scoped theme transitions — avoids global repaint overhead */
+body,
+.card-glass,
+.btn,
+.btn-primary,
+.btn-secondary,
+.form-input,
+.form-select {
   transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1), 
               border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -343,5 +353,50 @@ body {
     .nav-link-label {
       display: inline !important;
     }
+  }
+}
+
+/* Skip-link for keyboard accessibility */
+.skip-link {
+  position: absolute;
+  top: -100px;
+  left: 20px;
+  background: var(--primary);
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 8px;
+  z-index: 99999;
+  font-weight: 700;
+  text-decoration: none;
+  transition: top 0.2s ease;
+  box-shadow: var(--shadow-md);
+}
+
+.skip-link:focus {
+  top: 20px;
+}
+
+/* Screen-reader only content (visually hidden) */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Respect reduced motion preferences — WCAG 2.3.3 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

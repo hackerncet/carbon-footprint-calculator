@@ -1,16 +1,29 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" dir="ltr">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ZeroGrid - Carbon Intelligence Engine</title>
     <meta name="description" content="Advanced carbon intelligence engine to track emissions, manage grid challenges, and purchase verified offsets." />
-    <!-- Preconnect for Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <meta name="theme-color" content="#08080a" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#f8fafc" media="(prefers-color-scheme: light)" />
+    <meta name="color-scheme" content="light dark" />
+
+    <!-- Resource Hints — preconnect to critical third-party origins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="dns-prefetch" href="https://apis.google.com" />
+    <link rel="dns-prefetch" href="https://securetoken.googleapis.com" />
+
+    <!-- Google Fonts — display=swap avoids render-blocking FOIT -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   </head>
   <body>
+    <noscript>
+      <p style="padding:2rem;font-family:sans-serif;text-align:center">
+        JavaScript is required to use ZeroGrid. Please enable JavaScript in your browser settings.
+      </p>
+    </noscript>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

@@ -31,7 +31,7 @@ export default function Navbar({ userPoints = 0, userStreak = 0 }: NavbarProps) 
   const { theme, toggleTheme } = useTheme();
 
   return (
-    <nav className="navbar">
+    <nav className="navbar" role="navigation" aria-label="Main navigation">
       <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }} className="nav-top-section">
         {/* Header Branding */}
         <div className="nav-logo">
@@ -52,7 +52,7 @@ export default function Navbar({ userPoints = 0, userStreak = 0 }: NavbarProps) 
         </div>
 
         {/* Navigation list */}
-        <ul className="nav-links">
+        <ul className="nav-links" role="list">
           {NAV_ITEMS.map(item => {
             const isActive = location.pathname === item.path;
             const Icon = item.icon;
@@ -161,7 +161,7 @@ export default function Navbar({ userPoints = 0, userStreak = 0 }: NavbarProps) 
               justifyContent: 'center',
               fontWeight: 700,
               fontSize: '0.85rem',
-              backgroundImage: user.avatarUrl ? `url(${user.avatarUrl})` : 'none',
+              backgroundImage: user.avatarUrl && user.avatarUrl.startsWith('https://') ? `url(${user.avatarUrl})` : 'none',
               backgroundSize: 'cover'
             }}>
               {!user.avatarUrl && (user.displayName?.[0] || user.email?.[0] || 'U').toUpperCase()}

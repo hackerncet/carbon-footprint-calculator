@@ -3,8 +3,9 @@ import { requireAuth } from '../middleware/auth.js';
 import { offsetPurchaseSchema, SIMULATED_PROJECTS } from '@carbon/shared';
 import { db } from '../config/db.js';
 import { users, offsetPurchases } from '../db/schema.js';
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, desc } from 'drizzle-orm';
 import { awardBadge } from '../utils/gamification.js';
+import { logger } from '../config/logger.js';
 import crypto from 'crypto';
 
 const router = Router();
@@ -12,23 +13,32 @@ const router = Router();
 // Require authentication for all offset routes
 router.use(requireAuth);
 
-// GET /api/offsets - Get user offset purchase history
+/**
+ * GET /api/offsets
+ * Returns the authenticated user's offset purchase history,
+ * ordered by most recent first.
+ */
 router.get('/', async (req, res) => {
   try {
     const userId = req.user!.uid;
     const purchases = await db.query.offsetPurchases.findMany({
       where: eq(offsetPurchases.userId, userId),
-      orderBy: [desc(offsetPurchases.purchasedAt)]
+      orderBy: [desc(offsetPurchases.purchasedAt)],
     });
 
     res.json(purchases);
-  } catch (error) {
-    console.error('Error fetching offset purchases:', error);
+  } catch (error: unknown) {
+    logger.error('Error fetching offset purchases', { error });
     res.status(500).json({ error: 'Failed to fetch offset history' });
   }
 });
 
-// POST /api/offsets/purchase - Buy simulated offsets with Eco-Points
+/**
+ * POST /api/offsets/purchase
+ * Purchases a simulated carbon offset using ZeroGrid Points.
+ * Validates sufficient points balance, deducts cost within a transaction,
+ * and awards the Carbon Offset Champion badge on first purchase.
+ */
 router.post('/purchase', async (req, res) => {
   try {
     const userId = req.user!.uid;
@@ -51,7 +61,7 @@ router.post('/purchase', async (req, res) => {
 
     // Fetch user profile to verify points balance
     const user = await db.query.users.findFirst({
-      where: eq(users.id, userId)
+      where: eq(users.id, userId),
     });
 
     if (!user) {
@@ -59,21 +69,19 @@ router.post('/purchase', async (req, res) => {
     }
 
     if (user.points < requiredPoints) {
-      return res.status(400).json({ 
-        error: `Insufficient Eco-Points. Required: ${requiredPoints}, Available: ${user.points}` 
+      return res.status(400).json({
+        error: `Insufficient Eco-Points. Required: ${requiredPoints}, Available: ${user.points}`,
       });
     }
 
     const purchaseId = crypto.randomUUID();
 
-    // Perform purchase: update points and write purchase record
+    // Perform purchase: update points and write purchase record atomically
     await db.transaction(async (tx) => {
-      // Deduct points from user
       await tx.update(users)
         .set({ points: user.points - requiredPoints })
         .where(eq(users.id, userId));
 
-      // Record offset transaction
       await tx.insert(offsetPurchases).values({
         id: purchaseId,
         userId,
@@ -87,7 +95,7 @@ router.post('/purchase', async (req, res) => {
     const badgeAwarded = await awardBadge(userId, 'carbon_offset_champion');
 
     const updatedUser = await db.query.users.findFirst({
-      where: eq(users.id, userId)
+      where: eq(users.id, userId),
     });
 
     res.status(201).json({
@@ -97,14 +105,14 @@ router.post('/purchase', async (req, res) => {
         projectId,
         offsetAmountCo2eKg,
         costSimulatedCurrency: requiredPoints,
-        purchasedAt: Math.floor(Date.now() / 1000)
+        purchasedAt: Math.floor(Date.now() / 1000),
       },
       user: updatedUser,
-      badgeAwarded
+      badgeAwarded,
     });
 
-  } catch (error) {
-    console.error('Error purchasing offsets:', error);
+  } catch (error: unknown) {
+    logger.error('Error purchasing offsets', { error });
     res.status(500).json({ error: 'Failed to process offset purchase' });
   }
 });

@@ -19,7 +19,9 @@ interface OffsetMarketplaceProps {
   onStatsUpdate: (points: number, streak: number) => void;
 }
 
-const PROJECT_ICONS: Record<string, any> = {
+import type { LucideIcon } from 'lucide-react';
+
+const PROJECT_ICONS: Record<string, LucideIcon> = {
   amazon_reforestation: TreePine,
   wind_energy_texas: Wind,
   clean_water_uganda: Droplet
@@ -38,7 +40,14 @@ export default function OffsetMarketplace({ onStatsUpdate }: OffsetMarketplacePr
   
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [offsetValue, setOffsetValue] = useState<number | ''>('');
-  const [certificateData, setCertificateData] = useState<any>(null);
+  const [certificateData, setCertificateData] = useState<{
+    certificateId: string;
+    userName: string;
+    projectName: string;
+    offsetAmount: number;
+    purchasedDate: string;
+    pointsCost: number;
+  } | null>(null);
   
   const [loading, setLoading] = useState(true);
   const [buying, setBuying] = useState(false);
@@ -55,8 +64,7 @@ export default function OffsetMarketplace({ onStatsUpdate }: OffsetMarketplacePr
       setPoints(dashData.user.points);
       setHistory(purchaseHistory);
       onStatsUpdate(dashData.user.points, dashData.user.currentStreak);
-    } catch (err: any) {
-      console.error(err);
+    } catch (err: unknown) {
       setError('Failed to fetch marketplace data.');
     } finally {
       setLoading(false);
@@ -119,9 +127,9 @@ export default function OffsetMarketplace({ onStatsUpdate }: OffsetMarketplacePr
       setHistory(purchaseHistory);
 
       onStatsUpdate(result.user.points, result.user.currentStreak);
-    } catch (err: any) {
-      console.error(err);
-      setError(err.message || 'Offset purchase failed.');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Offset purchase failed.';
+      setError(message);
     } finally {
       setBuying(false);
     }
