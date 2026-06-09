@@ -7,7 +7,7 @@
 ---
 
 ## 🚀 Live Demo & Status
-* **Backend Status Health Check**: `https://carbonfootprintcalculator.me/api/health`
+* **Live**: `https://carbon-footprint-calculator-1-20xh.onrender.com/`
 
 ---
 
